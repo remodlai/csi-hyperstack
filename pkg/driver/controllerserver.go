@@ -88,17 +88,27 @@ func (cs *controllerServer) CreateVolume(
 		}
 	}
 
-	clusterIdInt, err := strconv.Atoi(clusterId)
-	if err != nil {
-		klog.Errorf("CreateVolume: Failed to convert cluster ID to int: %v", err)
-		return nil, status.Errorf(codes.Internal, "CreateVolume failed with error %v", err)
+	// Check for environment override in storage class parameters (for self-managed clusters)
+	var volEnvironment string
+	if envOverride, ok := req.GetParameters()["environment"]; ok && envOverride != "" {
+		volEnvironment = envOverride
+		klog.Infof("CreateVolume: Using environment from storage class parameter: %s", volEnvironment)
+	} else if clusterId != "" {
+		// Use cluster-based environment lookup (for Hyperstack-managed clusters)
+		clusterIdInt, err := strconv.Atoi(clusterId)
+		if err != nil {
+			klog.Errorf("CreateVolume: Failed to convert cluster ID to int: %v", err)
+			return nil, status.Errorf(codes.Internal, "CreateVolume failed with error %v", err)
+		}
+		clusterDetail, err := cloud.GetClusterDetail(ctx, clusterIdInt)
+		if err != nil {
+			klog.Errorf("CreateVolume: Failed to GetClusterDetail: %v", err)
+			return nil, status.Errorf(codes.Internal, "CreateVolume failed with error %v", err)
+		}
+		volEnvironment = *clusterDetail.EnvironmentName
+	} else {
+		return nil, status.Error(codes.Internal, "CreateVolume: No cluster ID label found and no environment parameter provided in storage class")
 	}
-	clusterDetail, err := cloud.GetClusterDetail(ctx, clusterIdInt)
-	if err != nil {
-		klog.Errorf("CreateVolume: Failed to GetClusterDetail: %v", err)
-		return nil, status.Errorf(codes.Internal, "CreateVolume failed with error %v", err)
-	}
-	volEnvironment := *clusterDetail.EnvironmentName
 	klog.Infof("CreateVolume: Creating volume %s with size %d GiB in Environment: %s", volName, volSizeGB, volEnvironment)
 	vol, err := cloud.CreateVolume(ctx, volName, volSizeGB, volType, volEnvironment, properties)
 	if err != nil {
