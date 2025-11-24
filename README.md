@@ -1,8 +1,24 @@
-# Hyperstack CSI Driver
+# Hyperstack CSI Driver - Remodl AI Custom Fork
+
+**Maintained by:** Remodl AI
+**Upstream:** [NexGenCloud/csi-hyperstack](https://github.com/NexGenCloud/csi-hyperstack)
+**Customizations:** NodeSelector support for multi-cloud Kubernetes deployments
+
 Current released image - `reg.digitalocean.ngbackend.cloud/hyperstack-csi-driver/csi:v0.0.1`
 
+## Remodl AI Customizations
+
+This fork adds the following enhancements to the upstream Hyperstack CSI driver:
+
+- **NodeSelector Support**: Allows restricting CSI node DaemonSet to Hyperstack nodes only in multi-cloud clusters
+- **Multi-Cloud K8s Optimization**: Prevents CSI driver from attempting to run on non-Hyperstack nodes (AWS, GCP, etc.)
+
+### Why This Fork Exists
+
+In multi-cloud Kubernetes deployments (e.g., AWS control plane + Hyperstack GPU workers), the upstream CSI driver attempts to run on all nodes. This causes crashes on non-Hyperstack nodes since the driver can only attach Hyperstack volumes to Hyperstack VMs. This fork enables proper node targeting via standard Kubernetes nodeSelector configuration.
+
 ## Introduction
-This documentation provides instructions for installing and using the Hyperstack CSI Driver. The CSI provisioner for hyerstack CSI driver is `hyperstack.csi.nexgencloud.com`.
+This documentation provides instructions for installing and using the Hyperstack CSI Driver. The CSI provisioner for hyperstack CSI driver is `hyperstack.csi.nexgencloud.com`.
 Before you begin, ensure you have the following tools installed:
 
 * Go 1.24
