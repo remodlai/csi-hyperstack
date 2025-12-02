@@ -1,0 +1,29 @@
+# Example values for Hyperstack CSI Driver
+# Copy to values.yaml and customize for your environment
+
+hyperstack:
+  # Get from https://console.hyperstack.cloud/ → API Keys
+  apiKey: "YOUR_API_KEY_HERE"
+
+  # Use Tailscale endpoint if running multi-cloud
+  # Default: https://infrahub-api.nexgencloud.com/v1
+  apiAddress: "https://tailscale-hyperstack-api.tail972298.ts.net/v1"
+
+  # Get from: curl -H "api_key: YOUR_KEY" https://infrahub-api.nexgencloud.com/v1/core/environments | jq -r '.environments[].name'
+  clusterId: "YOUR_ENVIRONMENT_NAME"
+
+# Only run CSI node driver on Hyperstack nodes
+nodeSelector:
+  cloud: hyperstack
+
+# Required if GPU nodes have NoSchedule taint
+tolerations:
+- key: nvidia.com/gpu
+  operator: Exists
+  effect: NoSchedule
+
+# Use custom Remodl AI image with multi-cloud support
+components:
+  csiHyperstack:
+    image: remodlai/csi-hyperstack
+    tag: v0.0.6-remodl2
