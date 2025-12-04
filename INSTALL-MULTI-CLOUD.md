@@ -409,6 +409,45 @@ parameters:
 
 ---
 
+### CSI Node Pod Crash Looping
+
+**Symptom:** `csi-hyperstack-node` pod shows CrashLoopBackOff with probe timeout errors:
+```
+Liveness probe failed: command timed out after 1s
+```
+
+**Root Cause:** Default liveness/readiness probe timeout (1s) is too aggressive. grpcurl execution via shell takes >1 second occasionally, especially in cross-cloud or high-latency environments.
+
+**Solution:**
+Increase probe timeouts in the DaemonSet:
+```bash
+kubectl patch daemonset csi-hyperstack-node -n kube-system --type='json' -p='[
+  {"op": "replace", "path": "/spec/template/spec/containers/0/livenessProbe/timeoutSeconds", "value": 5},
+  {"op": "replace", "path": "/spec/template/spec/containers/0/readinessProbe/timeoutSeconds", "value": 5}
+]'
+```
+
+**Why 5 Seconds:**
+- Accounts for grpcurl startup overhead
+- Handles cross-cloud network latency
+- Provides buffer during node load spikes
+
+**Impact of Not Fixing:**
+- Pod restarts every few minutes (wastes resources)
+- Logs fill with probe failures (noise)
+- No volume operation impact (CSI controller handles provisioning)
+
+**Prevention:**
+When deploying via Helm, add to values.yaml:
+```yaml
+livenessProbe:
+  timeoutSeconds: 5
+readinessProbe:
+  timeoutSeconds: 5
+```
+
+---
+
 ## What Works
 
 ✅ Dynamic volume provisioning on Hyperstack
